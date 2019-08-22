@@ -42,6 +42,11 @@
       include_tasks: "{{ playbook_dir }}/sub-tasks/install-from-source.yml"
       when: install_from_source is defined or install_result is not succeeded
 
+    - name: upgrade Flask
+      shell: |
+        source {{ airflow_venv }}/bin/activate
+        pip install --upgrade Flask {{ pip_args }}
+
     - name: Creates airflow_home directory
       file:
         path: "{{ airflow_home }}"
