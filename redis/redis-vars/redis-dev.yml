@@ -1,0 +1,5 @@
+env: dev
+redis_base: <define_your_path>
+redis_version: 5.0.5
+port: 6379
+broker_url: redis://{{ host }}:{{ port }}/0

@@ -1,0 +1,60 @@
+env: dev
+base_path: <define your path>
+
+# airflow variables
+airflow_venv: "{{ base_path }}/venv"
+airflow_home: "{{ base_path }}/airflow-app"
+airflow_log: "{{ base_path }}/logs"
+
+# folder for event trigger plugin
+airflow_sensor: "{{ airflow_home }}/sensors"
+
+# ===== airflow.cfg setting =========
+airflow_webserver_host: 0.0.0.0
+airflow_webserver_port: 8080
+backend_db: postgresql://airflow:airflow@0.0.0.0:5432/airflow
+sql_alchemy_pool_size: 5
+
+parallelism: 8
+dag_concurrency: 16
+
+# scheduler
+job_heartbeat_sec: 5
+scheduler_heartbeat_sec: 5
+min_file_process_interval: 5
+max_threads: 2
+
+# worker
+worker_refresh_interval: 60
+worker_log_server_port: 8798
+worker_autoscale: 12,8
+broker_url: redis://0.0.0.0:6379/0
+
+# flower
+flower_port: 5555
+
+# smtp
+smtp_host: localhost
+smtp_starttls: True
+smtp_user:
+smtp_password:
+smtp_port: 25
+smtp_mail_from: no_reply@airflow.com
+
+# ===== airflow related project =====
+# airflow source
+airflow_git_repo: git@github.com:apache/airflow.git
+airflow_git_branch: 1.10.3
+airflow_source: "{{ base_path }}/airflow-sourcecode"
+
+# airflow plugin
+airflow_plugin_git_repo: git@github.com:ShandiLin/airflow-event-plugins.git
+airflow_plugin: "{{ base_path }}/airflow-plugins"
+
+# airflow maintenance dags
+airflow_maintenance_dags_git_repo: git@github.com:teamclairvoyant/airflow-maintenance-dags.git
+airflow_maintenance_dags: "{{ base_path }}/airflow-maintenance-dags"
+
+# ===== others =====
+# set pip arguments if needed
+pip_args: ""

@@ -1,0 +1,18 @@
+- name: clone airflow-sourcecode from git repo
+  git:
+    repo: "{{ airflow_git_repo }}"
+    dest: "{{ airflow_source }}"
+    version: "{{ airflow_git_branch }}"
+
+- name: install airflow from source code - compile assets
+  shell: |
+    source {{ airflow_venv }}/bin/activate
+    cd {{ airflow_source }}
+    python setup.py compile_assets -e {{ env }}
+
+- name: install(force reinstall) airflow from source code - build wheel and install
+  shell: |
+    source {{ airflow_venv }}/bin/activate
+    cd {{ airflow_source }}
+    python setup.py bdist_wheel --pip-args="{{ pip_args }}"
+    pip install --upgrade --force-reinstall {{ airflow_source }}/dist/apache_airflow-1.10.3-py2-none-any.whl {{ pip_args }}

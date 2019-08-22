@@ -1,0 +1,62 @@
+- name: postresql depolyment
+  hosts: localhost
+  tasks:
+    - name: rm postgresql folder if exist
+      file:
+        state: absent
+        path: "{{ pg_base }}/postgresql-{{ pg_version }}"
+
+    - name: Extract postgresql.tgz
+      unarchive:
+          src: "{{ pg_base }}/postgresql-{{ pg_version }}.tar.gz"
+          dest: "{{ pg_base }}"
+
+    - name: Creates pgsql directory
+      file:
+        path: "{{ pgsql_home }}"
+        state: directory
+
+    - name: configure, make and make install
+      shell: |
+        ./configure --prefix={{ pgsql_home }} --without-readline --with-pgport={{ pg_port }}
+        make
+        make install
+      args:
+        chdir: "{{ pg_base }}/postgresql-{{ pg_version }}"
+
+    - name: rm pgsql data if exist
+      file:
+        state: absent
+        path: "{{ pgsql_home }}/data"
+
+    - name: Creates pgsql data directory
+      file:
+        path: "{{ pgsql_home }}/data"
+        state: directory
+
+    - name: initial db
+      shell: ./bin/initdb -D ./data/
+      args:
+        chdir: "{{ pgsql_home }}"
+
+    - name: start server
+      shell: ./bin/pg_ctl -D ./data/ -l logfile start
+      args:
+        chdir: "{{ pgsql_home }}"
+
+    - name: create db
+      shell: ./bin/createdb -p {{ pg_port }} airflow
+      args:
+        chdir: "{{ pgsql_home }}"
+
+    - name: add db user
+      shell: ./bin/createuser airflow
+      args:
+        chdir: "{{ pgsql_home }}"
+
+    - name: connect to airflow db, grant db permission to user
+      shell: |
+        cd {{ pgsql_home }}
+        ./bin/psql -p {{ pg_port }} -d airflow -c "GRANT ALL PRIVILEGES ON DATABASE airflow TO airflow;"
+      args:
+        chdir: "{{ pgsql_home }}"

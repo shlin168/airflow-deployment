@@ -1,0 +1,4 @@
+pg_base: <define_your_path>
+pgsql_home: "{{ pg_base }}/pgsql"
+pg_port: 5432
+pg_version: 11.2

@@ -1,0 +1,17 @@
+- name: redis depolyment
+  hosts: localhost
+  tasks:
+    - name: Extract redis.tar
+      unarchive:
+          src: "{{ redis_base }}/redis-{{ redis_version }}.tar.gz"
+          dest: "{{ redis_base }}"
+
+    - name: make install redis
+      shell: |
+        make
+        make test
+      args:
+        chdir: "{{ redis_base }}/redis-{{ redis_version }}"
+
+    - name: start redis server in specified port
+      shell: "{{ redis_base }}/redis-{{ redis_version }}/src/redis-server --port {{ port }} > {{ redis_base }}/redis.log 2>&1 &"

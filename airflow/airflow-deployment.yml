@@ -1,0 +1,160 @@
+- name: airflow depolyment
+  hosts: localhost
+  vars:
+    ansible_python_interpreter: auto
+  tasks:
+    - name: rm virtualenv if keep_venv not given
+      file:
+        state: absent
+        path: "{{ airflow_venv }}"
+      when: keep_venv is not defined
+
+    - name: check virtualenv exists
+      stat:
+        path: "{{ airflow_venv }}"
+      register: venv
+
+    - name: create virtualenv if not exist
+      shell: virtualenv -p python2.7 --no-setuptools --no-wheel --no-site-packages --no-download {{ airflow_venv }}
+      when: venv.stat.exists == false
+
+    - name: install python libs
+      shell: |
+        source {{ airflow_venv }}/bin/activate
+        pip install --upgrade pip==18.1 {{ pip_args }}
+        pip install setuptools wheel {{ pip_args }}
+        pip install confluent-kafka==0.11.6 {{ pip_args }}
+        pip install psycopg2-binary==2.8.3 {{ pip_args }}
+        pip install paramiko==2.6.0 sshtunnel==0.1.5 pysftp==0.2.9 {{ pip_args }}
+        pip install sasl==0.2.1 thrift_sasl==0.3.0 pyhive hmsclient==0.1.1 {{ pip_args }}
+        pip install kombu==4.6.3 {{ pip_args }}
+        pip install celery==4.3.0 redis==3.3.7 flower==0.9.3 {{ pip_args }}
+
+    - name: try installing airflow from nexus
+      shell: |
+        source {{ airflow_venv }}/bin/activate
+        pip install apache-airflow=={{ airflow_git_branch }} {{  pip_args }}
+      when: install_from_source is not defined
+      register: install_result
+      ignore_errors: yes
+
+    - name: install from airflow source code when install_from_source=true or installing airflow from nexus failed
+      include_tasks: "{{ playbook_dir }}/sub-tasks/install-from-source.yml"
+      when: install_from_source is defined or install_result is not succeeded
+
+    - name: Creates airflow_home directory
+      file:
+        path: "{{ airflow_home }}"
+        state: directory
+
+    - name: read old fernet_key from $AIRFLOW_HOME/airflow.cfg if not resetting data in db
+      set_fact:
+        fernet_key: "{{ lookup('ini', 'fernet_key section=core file={{ airflow_home }}/airflow.cfg') }}"
+      when: keep_db is defined
+
+    - name: clean if there's airflow.cfg
+      file:
+        state: absent
+        path: "{{ airflow_home }}/airflow.cfg"
+
+    - name: run airflow initdb to get config files
+      shell: |
+        source {{ airflow_venv }}/bin/activate
+        airflow initdb
+      environment:
+        AIRFLOW_HOME: "{{ airflow_home }}"
+
+    - name: clean if there's airflow.db (sqllite)
+      file:
+        state: absent
+        path: "{{ airflow_home }}/airflow.db"
+
+    - name: generate new secret key to save connection passwords in the db if resetting db
+      shell: |
+        source {{ airflow_venv }}/bin/activate
+        python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      register:
+        generate_fernet_key
+      when: fernet_key is not defined
+
+    - name: get new fernet key to variable
+      set_fact:
+        fernet_key: "{{ generate_fernet_key.stdout }}"
+      when: fernet_key is not defined
+
+    - name: uncomment smtp user/password, celery worker_autoscale for next task to modify value
+      replace:
+        path: "{{ airflow_home }}/airflow.cfg"
+        regexp: "{{ item.regexp }}"
+        replace: "{{ item.replace }}"
+      with_items:
+        - { regexp: '^\#\s(smtp_user)', replace: '\1' }
+        - { regexp: '^\#\s(smtp_password)', replace: '\1' }
+        - { regexp: '^\#\s(worker_autoscale)', replace: '\1' }
+
+    - name: modify airflow config
+      ini_file:
+        path: "{{ airflow_home }}/airflow.cfg"
+        section: "{{ item.section }}"
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
+      with_items:
+        - { section: "core", option: "default_timezone", value: "Asia/Taipei" }
+        - { section: "core", option: "executor", value: CeleryExecutor }
+        - { section: "core", option: "sql_alchemy_conn", value: "{{ backend_db }}" }
+        - { section: "core", option: "sql_alchemy_pool_size", value: "{{ sql_alchemy_pool_size }}" }
+        - { section: "core", option: "parallelism", value: "{{ parallelism }}" }
+        - { section: "core", option: "dag_concurrency", value: "{{ dag_concurrency }}" }
+        - { section: "core", option: "load_examples", value: False }
+        - { section: "core", option: "fernet_key", value: "{{ fernet_key }}" }
+        - { section: "core", option: "security_mode", value: True }
+        - { section: "core", option: "dag_run_conf_overrides_params", value: True }
+        - { section: "core", option: "plugins_folder", value: "$AIRFLOW_HOME/plugins" }
+        - { section: "core", option: "dags_folder", value: "$AIRFLOW_HOME/dags" }
+        - { section: "core", option: "base_log_folder", value: "{{ airflow_log }}" }
+        - { section: "core", option: "dag_processor_manager_log_location", value: "{{ airflow_log }}/dag_processor_manager/dag_processor_manager.log" }
+        - { section: "core", option: "log_filename_template", value: "{% raw %}dags/{{ '{{' }} ti.dag_id {{ '}}' }}/{{ '{{' }} ti.task_id {{ '}}' }}/{{ '{{' }} ts {{ '}}' }}/{{ '{{' }} try_number {{ '}}' }}.log{% endraw %}" }
+        - { section: "webserver", option: "base_url", value: "http://{{ airflow_webserver_host }}:{{ airflow_webserver_port }}" }
+        - { section: "webserver", option: "web_server_host", value: "{{ airflow_webserver_host }}" }
+        - { section: "webserver", option: "web_server_port", value: "{{ airflow_webserver_port }}" }
+        - { section: "webserver", option: "worker_refresh_interval", value: "{{ worker_refresh_interval }}" }
+        - { section: "webserver", option: "filter_by_owner", value: True }
+        - { section: "scheduler", option: "job_heartbeat_sec", value: "{{ job_heartbeat_sec }}" }
+        - { section: "scheduler", option: "scheduler_heartbeat_sec", value: "{{ scheduler_heartbeat_sec }}" }
+        - { section: "scheduler", option: "min_file_process_interval", value: "{{ min_file_process_interval }}" }
+        - { section: "scheduler", option: "catchup_by_default", value: False }
+        - { section: "scheduler", option: "child_process_log_directory", value: "{{ airflow_log }}/scheduler_child_process" }
+        - { section: "scheduler", option: "max_threads", value: "{{ max_threads }}" }
+        - { section: "celery", option: "broker_url", value: "{{ broker_url }}" }
+        - { section: "celery", option: "result_backend", value: "db+{{ backend_db }}" }
+        - { section: "celery", option: "worker_log_server_port", value: "{{ worker_log_server_port }}" }
+        - { section: "celery", option: "worker_autoscale", value: "{{ worker_autoscale }}" }
+        - { section: "celery", option: "flower_port", value: "{{ flower_port }}" }
+        - { section: "smtp", option: "smtp_host", value: "{{ smtp_host }}" }
+        - { section: "smtp", option: "smtp_starttls", value: "{{ smtp_starttls }}" }
+        - { section: "smtp", option: "smtp_user", value: "{{ smtp_user }}" }
+        - { section: "smtp", option: "smtp_password", value: "{{ smtp_password }}" }
+        - { section: "smtp", option: "smtp_port", value: "{{ smtp_port }}" }
+        - { section: "smtp", option: "smtp_mail_from", value: "{{ smtp_mail_from }}" }
+
+    - name: Creates airflow log directory
+      file:
+        path: "{{ item }}"
+        state: directory
+      with_items:
+        - "{{ airflow_log }}/webserver"
+        - "{{ airflow_log }}/scheduler"
+        - "{{ airflow_log }}/worker"
+        - "{{ airflow_log }}/flower"
+        - "{{ airflow_log }}/dags"
+
+    - name: resetdb
+      shell: |
+        source {{ airflow_venv }}/bin/activate
+        airflow resetdb -y
+      environment:
+        AIRFLOW_HOME: "{{ airflow_home }}"
+      when: keep_db is not defined
+
+    - name: app initialize
+      include_tasks: "{{ playbook_dir }}/sub-tasks/app-initialize.yml"
