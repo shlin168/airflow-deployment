@@ -71,7 +71,7 @@ src/redis-cli shutdown
 * `--keep_db` modify `sql_alchemy_conn` in `airflow.cfg` to change backend db from *sqllite(default)* to *postgresql* without reseting db, some data such as connections, variables, and pools ... will not be deleted. <span style="color:red">Do not use this argument if backend database is already empty or `airflow.cfg` is not exist.</span>
 * `--keep_venv` speeds up the deployment process without removing existed venv. However, <span style="color:red">if there're new version of libraries, don't use this argument since it may not upgrade the libraries.</span>
 * `--install_from_source` clone repo from `airflow_git_repo` and build instead of trying to download from nexus. Unstall `apache-airflow` packages first and install from source again when it's used with `--keep_venv`.
-<span style="color:red">* airflow deployment includes writing config file to `var/airflow-deployment-conf.sh`, it is used for scripts to read and control the services</span>
+* <span style="color:red">airflow deployment includes writing config file to `var/airflow-deployment-conf.sh`, it is used for scripts to read and control the services</span>
 
 ## Start airflow
 > use -h to show usage function
