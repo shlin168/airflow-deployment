@@ -30,7 +30,7 @@
         pip install kombu==4.6.3 {{ pip_args }}
         pip install celery==4.3.0 redis==3.3.7 flower==0.9.3 {{ pip_args }}
 
-    - name: try installing airflow from nexus
+    - name: installing airflow
       shell: |
         source {{ airflow_venv }}/bin/activate
         pip install apache-airflow=={{ airflow_git_branch }} {{  pip_args }}

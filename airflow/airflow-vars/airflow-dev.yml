@@ -56,5 +56,5 @@ airflow_maintenance_dags_git_repo: git@github.com:teamclairvoyant/airflow-mainte
 airflow_maintenance_dags: "{{ base_path }}/airflow-maintenance-dags"
 
 # ===== others =====
-# set pip arguments if needed
+# set pip arguments if needed. e.g., download from custom pypi server instead of official one
 pip_args: ""
