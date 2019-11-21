@@ -1,29 +1,68 @@
 # Airflow Operations - Deployment
 
-## Prepare for deployment
-### [Opt] Create virtualenv and install `ansible`
-<span style="color:red">Do it if `ansible` is not installed globally, or skip this step</span>
+* [Predeployment](#predeployment)
+    * [Opt] [Preprare ansible if not installed](#prepare-ansible-for-deployment)
+    * [Set variables](#set-variables-in-config)
+    * [Ensure SSH connection](#ensure-ssh-key-is-set)
+    * [Opt] [pre-deploy in MacOS](#preDeploy-in-MacOS)
+* [Deployment](#deploy-services)
+    * [Airflow](#airflow)
+    * [Postresql](#postgresql)
+    * [Redis](#redis)
+* [Controll Airflow Service](#control-airflow)
+* [Service Structure](#service-structure)
+* [TODO](#todo)
+
+
+## Predeployment
+### Prepare ansible for deployment
+> skip if ansible is already installed
+#### Opt 1: pip install in global
+```
+pip install ansible
+```
+#### Opt 2: Create virtualenv and install `ansible` within it
 ```
 ./pre-deploy.sh -e ut [-f]
 source venv/bin/activate
 ```
 * `-f` will force delete the old venv and create a new one, or it will raise error if venv already exists
 
-### Modify base path and other variables
-* find `<define your path>` in `<service>/<service>-vars/<service>-<env>.yml` and modify to define your `base_path`
-* check and modify other variables if needed
+### Set variables in config
+* Copy `<service>/<service>-vars/<service>-dev.yml` to `<service>/<service>-vars/<service>-<env>.yml`, `<env>` might be the env name where you deploy service
+* within `<service>/<service>-vars/<service>-<env>.yml`
+    * change value of `base_path`，check [Service Structure](#service-structure) for recommended `base_path` location
+    * change value of `env` to your `<env>` name
+    * change other variables if needed
 
-### Ensure that ssh key for gitlab or tfs is set
+### Ensure ssh key is set
 The script will download repos from github, make sure the following command works
 > github (dev)
 ```
 ssh -T git@github.com
 ```
 
+### PreDeploy in MacOS
+1. The deployment script use getopts which follows gnu-getopt. To let it works in MacOS, we need to install `gnu-getopt`.
+```
+brew install gnu-getopt
+echo 'export PATH="/usr/local/opt/gnu-getopt/bin:$PATH"' >> ~/.bash_profile
+```
+2. `tar` type is `bsd-tar` in MacOS. To let ansible works with unarchive postresql and redis, we need to install `gnu-tar`.
+```
+brew install gnu-tar
+echo 'export PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH"' >> ~/.bash_profile
+```
+
 ## Deploy services
-> env: dev
-### postgresql
-#### install from source code
+* [Airflow](#airflow)
+* [Postresql](#postgresql)
+* [Redis](#redis)
+
+> Notice: `<env>` is your env name
+### Postgresql
+> skip to [Set Database - postgresql](#set-database---postgresql) and [Set Varieble - Postgresql](#set-varieble---postgresql) if postgresql is already installed
+#### Opt1: Install from source code
 ```
 ./deploy.sh -s postgresql -e <env>
 ```
@@ -40,16 +79,21 @@ Download source code from [postgresql](https://www.postgresql.org/ftp/source/). 
 ./bin/pg_ctl -D ./data/ stop
 ```
 
-#### [dev] install from binary
-> If testing with `dev` environment, it's easier to install from binary and you need to create db, user and grant permission manually.
+#### Opt2: Install from binary
+> If testing with `dev` environment, it's easier to install from binary and you just need to create db, user and grant permission manually.
+
+#### Set database - postgresql
+create user and database for airflow
 ```postgresql
 postgres=# create database <db>;
 postgres=# create user <user> with encrypted password '<pwd>';
 postgres=# grant all privileges on database <db> to <user>;
 ```
-Check if `backend_db` in `airflow/airflow-vars/airflow-<env>.yml` is set to `postgresql://<user>:<pwd>@0.0.0.0:5432/<db>`
+#### Set varieble - postgresql
+Check if `backend_db` in `airflow/airflow-vars/airflow-<env>.yml` is set to correct location. e.g., `postgresql://<user>:<pwd>@0.0.0.0:5432/<db>`
 
 ### redis
+> skip to [Set varieble - redis](#set-varieble---redis) if redis is already installed.
 ```
 ./deploy.sh -s redis -e <env>
 ```
@@ -63,8 +107,10 @@ src/redis-server > ../redis.log 2>&1 &
 ```
 src/redis-cli shutdown
 ```
+#### Set varieble - redis
+Check if `broker_url` in `airflow/airflow-vars/airflow-<env>.yml` is set to correct location. e.g., `redis://0.0.0.0:6379/0`
 
-### airflow
+### Airflow
 ```
 ./deploy.sh -s airflow -e <env> [--keep_db] [--keep_venv] [--install_from_source]
 ```
@@ -73,9 +119,9 @@ src/redis-cli shutdown
 * `--install_from_source` clone repo from `airflow_git_repo` and build instead of trying to download from nexus. Unstall `apache-airflow` packages first and install from source again when it's used with `--keep_venv`.
 * <span style="color:red">airflow deployment includes writing config file to `var/airflow-deployment-conf.sh`, it is used for scripts to read and control the services</span>
 
-## Start airflow
+## Control airflow
 > use -h to show usage function
-* start from scripts, process running in backgroud
+* control airflow from scripts, process running in backgroud
 ```python
 # start | stop | restart | status
 scripts/airflow-webserver.sh [start|stop|restart|status]
@@ -106,11 +152,6 @@ airflow worker
 # start ariflow flower
 airflow flower
 ```
-
-## TODO
-* git ssh key in ansible script
-* log rotation
-* `airflow scheduler -D` not work with LocalExecutor|CeleryExecutor in osx 10.14.5
 
 ## Service Structure
 * airflow/postgresql/redis service structure
@@ -152,3 +193,8 @@ airflow flower
 └───airflow-sourcecode (opt)
 └───airflow-plugins
 ```
+
+## TODO
+* git ssh key in ansible script
+* log rotation
+* `airflow scheduler -D` not work with LocalExecutor|CeleryExecutor in osx 10.14.5
