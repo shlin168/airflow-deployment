@@ -1,27 +1,7 @@
-- name: plugins - clone airflow-plugin from git repo
-  git:
-    repo: "{{ airflow_plugin_git_repo }}"
-    dest: "{{ airflow_plugin }}"
-
-- name: plugins - copy plugin folder to airflow-app folder
-  copy:
-    src: "{{ airflow_plugin }}/plugins"
-    dest: "{{ airflow_home }}"
-
-- name: plugins - Creates airflow event trigger sensors directory
+- name: creates airflow plugins directory
   file:
-    path: "{{ airflow_sensor }}"
+    path: "{{ airflow_home }}/plugins"
     state: directory
-
-- name: dags - clone airflow maintenance dags from git repo
-  git:
-    repo: "{{ airflow_maintenance_dags_git_repo }}"
-    dest: "{{ airflow_maintenance_dags }}"
-
-- name: dags - copy airflow maintenance dags to dags folder
-  copy:
-    src: "{{ airflow_maintenance_dags }}"
-    dest: "{{ airflow_home }}/dags"
 
 - name: create vars for recording information
   file:
@@ -32,7 +12,7 @@
   copy:
     content: |
       #!/bin/bash
-      AIRFLOW_BASEDIR={{ base_path }}
-      AIRFLOW_HOME={{ airflow_home }}
-      AIRFLOW_LOG={{ airflow_log }}
+      export AIRFLOW_BASEDIR={{ base_path }}
+      export AIRFLOW_HOME={{ airflow_home }}
+      export AIRFLOW_LOG={{ airflow_log }}
     dest: '{{ base_path }}/airflow-operation/var/airflow-deployment-conf.sh'

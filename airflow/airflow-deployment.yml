@@ -33,7 +33,7 @@
     - name: installing airflow
       shell: |
         source {{ airflow_venv }}/bin/activate
-        pip install apache-airflow=={{ airflow_git_branch }} {{  pip_args }}
+        pip install apache-airflow=={{ airflow_version }} {{  pip_args }}
       when: install_from_source is not defined
       register: install_result
       ignore_errors: yes
@@ -104,8 +104,8 @@
         option: "{{ item.option }}"
         value: "{{ item.value }}"
       with_items:
-        - { section: "core", option: "default_timezone", value: "Asia/Taipei" }
-        - { section: "core", option: "executor", value: CeleryExecutor }
+        - { section: "core", option: "default_timezone", value: "{{ default_timezone }}" }
+        - { section: "core", option: "executor", value: "{{ executor }}" }
         - { section: "core", option: "sql_alchemy_conn", value: "{{ backend_db }}" }
         - { section: "core", option: "sql_alchemy_pool_size", value: "{{ sql_alchemy_pool_size }}" }
         - { section: "core", option: "parallelism", value: "{{ parallelism }}" }
@@ -114,8 +114,8 @@
         - { section: "core", option: "fernet_key", value: "{{ fernet_key }}" }
         - { section: "core", option: "security_mode", value: True }
         - { section: "core", option: "dag_run_conf_overrides_params", value: True }
-        - { section: "core", option: "plugins_folder", value: "$AIRFLOW_HOME/plugins" }
-        - { section: "core", option: "dags_folder", value: "$AIRFLOW_HOME/dags" }
+        - { section: "core", option: "plugins_folder", value: "{{ airflow_plugins }}" }
+        - { section: "core", option: "dags_folder", value: "{{ airflow_dags }}" }
         - { section: "core", option: "base_log_folder", value: "{{ airflow_log }}" }
         - { section: "core", option: "dag_processor_manager_log_location", value: "{{ airflow_log }}/dag_processor_manager/dag_processor_manager.log" }
         - { section: "core", option: "log_filename_template", value: "{% raw %}dags/{{ '{{' }} ti.dag_id {{ '}}' }}/{{ '{{' }} ti.task_id {{ '}}' }}/{{ '{{' }} ts {{ '}}' }}/{{ '{{' }} try_number {{ '}}' }}.log{% endraw %}" }

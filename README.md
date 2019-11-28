@@ -1,10 +1,11 @@
 # Airflow Operations - Deployment
 
 * [Predeployment](#predeployment)
-    * [Opt] [Preprare ansible if not installed](#prepare-ansible-for-deployment)
+    * [Opt: Preprare ansible if not installed](#opt-prepare-ansible-for-deployment)
     * [Set variables](#set-variables-in-config)
     * [Ensure SSH connection](#ensure-ssh-key-is-set)
-    * [Opt] [pre-deploy in MacOS](#preDeploy-in-MacOS)
+    * [Opt: Install NPM if building airflow from source](#opt-install-NPM-if-building-airflow-from-source)
+    * [PreDeploy in MacOS](#preDeploy-in-MacOS)
 * [Deployment](#deploy-services)
     * [Airflow](#airflow)
     * [Postresql](#postgresql)
@@ -15,7 +16,7 @@
 
 
 ## Predeployment
-### Prepare ansible for deployment
+### [Opt] Prepare ansible for deployment
 > skip if ansible is already installed
 #### Opt 1: pip install in global
 ```
@@ -41,6 +42,9 @@ The script will download repos from github, make sure the following command work
 ```
 ssh -T git@github.com
 ```
+
+### [Opt] Install NPM if building airflow from source
+If deploying airflow with `--install-from-source` flag, make sure that there's `npm` installed in your environment.
 
 ### PreDeploy in MacOS
 1. The deployment script use getopts which follows gnu-getopt. To let it works in MacOS, we need to install `gnu-getopt`.
@@ -112,11 +116,11 @@ Check if `broker_url` in `airflow/airflow-vars/airflow-<env>.yml` is set to corr
 
 ### Airflow
 ```
-./deploy.sh -s airflow -e <env> [--keep_db] [--keep_venv] [--install_from_source]
+./deploy.sh -s airflow -e <env> [--keep-db] [--keep-venv] [--install-from-source]
 ```
-* `--keep_db` modify `sql_alchemy_conn` in `airflow.cfg` to change backend db from *sqllite(default)* to *postgresql* without reseting db, some data such as connections, variables, and pools ... will not be deleted. <span style="color:red">Do not use this argument if backend database is already empty or `airflow.cfg` is not exist.</span>
-* `--keep_venv` speeds up the deployment process without removing existed venv. However, <span style="color:red">if there're new version of libraries, don't use this argument since it may not upgrade the libraries.</span>
-* `--install_from_source` clone repo from `airflow_git_repo` and build instead of trying to download from nexus. Unstall `apache-airflow` packages first and install from source again when it's used with `--keep_venv`.
+* `--keep-db` modify `sql_alchemy_conn` in `airflow.cfg` to change backend db from *sqlite(default)* to *postgresql* without reseting db, data such as connections, variables, and pools ... will not be deleted. <span style="color:red">Do not use this argument if backend database is already empty or `airflow.cfg` is not exist.</span>
+* `--keep-venv` speeds up the deployment process without removing existed venv. However, <span style="color:red">if there're new version of libraries, don't use this argument since it may not upgrade those libraries.</span>
+* `--install-from-source` clone repository from `airflow_repo` and build instead of trying to download from pypi server. Force reinstall `apache-airflow` when it's used with `--keep-venv`.
 * <span style="color:red">airflow deployment includes writing config file to `var/airflow-deployment-conf.sh`, it is used for scripts to read and control the services</span>
 
 ## Control airflow

@@ -1,20 +1,40 @@
+# Variables for deployment
+
+# Usage: copy this file with filename: airflow-<env>.yml under same folder
+# <env> should be the same as value of env
+# if env=dev, then deployment command should be:
+# ./deploy.sh -s airflow -e dev ...
+# It will use the variables from airflow/airflow-vars/airflow-dev.yml
 env: dev
+
+# root path for airflow and related services
 base_path: <define your path>
 
-# airflow variables
+# airflow path variables
 airflow_venv: "{{ base_path }}/venv"
 airflow_home: "{{ base_path }}/airflow-app"
 airflow_log: "{{ base_path }}/logs"
-
-# folder for event trigger plugin
-airflow_sensor: "{{ airflow_home }}/sensors"
+airflow_plugins: "{{ airflow_home }}/plugins"
+airflow_dags: "{{ airflow_home }}/dags"
 
 # ===== airflow.cfg setting =========
+# To have different settings in different environments (e.g., SequentialExecutor in dev, CeleryExecutor in prod).
+#    1. Add Variables here and set to different values in different files
+#    2. Add items to <modify airflow config> task in airflow/airflow-deployment.yml to replace config values.
+
+# timezone
+default_timezone: utc
+
+# webserver
 airflow_webserver_host: 0.0.0.0
 airflow_webserver_port: 8080
+worker_refresh_interval: 60
+
+# database
 backend_db: postgresql://airflow:airflow@0.0.0.0:5432/airflow
 sql_alchemy_pool_size: 5
 
+# parallelism
 parallelism: 8
 dag_concurrency: 16
 
@@ -24,13 +44,17 @@ scheduler_heartbeat_sec: 5
 min_file_process_interval: 5
 max_threads: 2
 
-# worker
-worker_refresh_interval: 60
+# worker (SequentialExecutor, LocalExecutor, CeleryExecutor, DaskExecutor, KubernetesExecutor)
+executor: CeleryExecutor
+
+# celery worker
 worker_log_server_port: 8798
 worker_autoscale: 12,8
+
+# celery broker URL (redis or rabbitmq)
 broker_url: redis://0.0.0.0:6379/0
 
-# flower
+# celery flower (to monitor celery workers)
 flower_port: 5555
 
 # smtp
@@ -41,19 +65,13 @@ smtp_password:
 smtp_port: 25
 smtp_mail_from: no_reply@airflow.com
 
-# ===== airflow related project =====
-# airflow source
-airflow_git_repo: git@github.com:apache/airflow.git
-airflow_git_branch: 1.10.3
-airflow_source: "{{ base_path }}/airflow-sourcecode"
-
-# airflow plugin
-airflow_plugin_git_repo: git@github.com:ShandiLin/airflow-event-plugins.git
-airflow_plugin: "{{ base_path }}/airflow-plugins"
-
-# airflow maintenance dags
-airflow_maintenance_dags_git_repo: git@github.com:teamclairvoyant/airflow-maintenance-dags.git
-airflow_maintenance_dags: "{{ base_path }}/airflow-maintenance-dags"
+# ===== airflow project =====
+# Only used when deploy with --install-from-source flag
+# If you fork the repository, specify the location of repository and version,
+# then it will be downloaded to <airflow_path>, build wheel and install
+airflow_repo: git@github.com:apache/airflow.git
+airflow_version: 1.10.6
+airflow_path: "{{ base_path }}/airflow-code"
 
 # ===== others =====
 # set pip arguments if needed. e.g., download from custom pypi server instead of official one

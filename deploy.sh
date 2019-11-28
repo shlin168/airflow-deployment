@@ -9,13 +9,13 @@ function usage() {
         -h|--help                             Show this message
         -e|--env                              Environment
         -s|--service                          choose service to deploy (airflow|postgresql|redis)
-        --keep_venv                           not remove old venv (only works when service=airflow)
-        --keep_db                             not reset airflow backend db (only works when service=airflow)
-        --install_from_source                 compile and build .whl from source code (only works when service=airflow)
+        --keep-venv                           not remove old venv (only works when service=airflow)
+        --keep-db                             not reset airflow backend db (only works when service=airflow)
+        --install-from-source                 compile and build .whl from source code (only works when service=airflow)
     "
 }
 
-args=$(getopt -o he:s: --long env:,service:,keep_db,keep_venv,install_from_source,help -- "$@")
+args=$(getopt -o he:s: --long env:,service:,keep-db,keep-venv,install-from-source,help -- "$@")
 
 if [ $? != 0 ]; then
     echo "terminating..." >&2
@@ -37,15 +37,15 @@ while true; do
         usage
         exit
         ;;
-    --keep_db)
+    --keep-db)
         KEEP_DB="true"
         shift
         ;;
-    --keep_venv)
+    --keep-venv)
         KEEP_VENV="true"
         shift
         ;;
-    --install_from_source)
+    --install-from-source)
         INSTALL_FROM_SOURCE="true"
         shift
         ;;
@@ -76,19 +76,24 @@ fi
 
 EXTRA_VARS=""
 
+function dash_to_underline() {
+    echo "$1" | tr "-" "_"
+}
+
 function build_extra_vars() {
     local NAME=$1
     local ARGS=$2
     if [ -n "${ARGS}" ] && [ "${SERVICE_OPTS}" != "airflow" ]; then
         echo "--${NAME} only works when --service=airflow, skip this argument"
     elif [ -n "${ARGS}" ]; then
-        EXTRA_VARS="${EXTRA_VARS} ${NAME}=true"
+        UNDERLINE_NAME=$(dash_to_underline $NAME)
+        EXTRA_VARS="${EXTRA_VARS} ${UNDERLINE_NAME}=true"
     fi
 }
 
-build_extra_vars "keep_db" $KEEP_DB
-build_extra_vars "keep_venv" $KEEP_VENV
-build_extra_vars "install_from_source" $INSTALL_FROM_SOURCE
+build_extra_vars "keep-db" $KEEP_DB
+build_extra_vars "keep-venv" $KEEP_VENV
+build_extra_vars "install-from-source" $INSTALL_FROM_SOURCE
 
 AIRFLOW_DEPLOY=${OPERATION_HOME}/airflow
 AIRFLOW_DEPLOY_VARS=${AIRFLOW_DEPLOY}/airflow-vars
