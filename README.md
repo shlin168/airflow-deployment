@@ -1,5 +1,7 @@
 # Airflow Operations - Deployment
 
+![](images/airflow-service-architecture.png)
+
 * [Predeployment](#predeployment)
     * [Opt: Preprare ansible if not installed](#opt-prepare-ansible-for-deployment)
     * [Set variables](#set-variables-in-config)
