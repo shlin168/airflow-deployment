@@ -3,6 +3,7 @@
 ![](images/airflow-service-architecture.png)
 
 * [Predeployment](#predeployment)
+    * [Install virtualenv](#make-sure-virtualenv-is-installed)
     * [Opt: Preprare ansible if not installed](#opt-prepare-ansible-for-deployment)
     * [Set variables](#set-variables-in-config)
     * [Ensure SSH connection](#ensure-ssh-key-is-set)
@@ -18,14 +19,19 @@
 
 
 ## Predeployment
+### Make Sure virtualenv is installed
+```
+pip install virtualenv
+```
 ### [Opt] Prepare ansible for deployment
 > skip if ansible is already installed
-#### Opt 1: pip install in global
+#### Opt 1: pip install in global environment
 ```
 pip install ansible
 ```
 #### Opt 2: Create virtualenv and install `ansible` within it
 ```
+# source into virtualenv before executing the deploy command below
 ./pre-deploy.sh -e ut [-f]
 source venv/bin/activate
 ```
@@ -55,6 +61,7 @@ brew install gnu-getopt
 echo 'export PATH="/usr/local/opt/gnu-getopt/bin:$PATH"' >> ~/.bash_profile
 ```
 2. `tar` type is `bsd-tar` in MacOS. To let ansible works with unarchive postresql and redis, we need to install `gnu-tar`.
+> If only deploy airflow, no need for this step
 ```
 brew install gnu-tar
 echo 'export PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH"' >> ~/.bash_profile
@@ -117,6 +124,7 @@ src/redis-cli shutdown
 Check if `broker_url` in `airflow/airflow-vars/airflow-<env>.yml` is set to correct location. e.g., `redis://0.0.0.0:6379/0`
 
 ### Airflow
+[airflow deployment docs](docs/airflow-deployment.md)
 ```
 ./deploy.sh -s airflow -e <env> [--keep-db] [--keep-venv] [--install-from-source]
 ```
@@ -201,6 +209,5 @@ airflow flower
 ```
 
 ## TODO
-* git ssh key in ansible script
-* log rotation
+* airflow log rotation
 * `airflow scheduler -D` not work with LocalExecutor|CeleryExecutor in osx 10.14.5
