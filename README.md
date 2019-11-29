@@ -30,12 +30,13 @@ pip install virtualenv
 pip install ansible
 ```
 #### Opt 2: Create virtualenv and install `ansible` within it
+Below command source into virtualenv (which has `ansible` installed)
 ```
-# source into virtualenv before executing the deploy command below
-./pre-deploy.sh -e ut [-f]
+./pre-deploy.sh [-f] [-e dev]
 source venv/bin/activate
 ```
 * `-f` will force delete the old venv and create a new one, or it will raise error if venv already exists
+* `-e` is used for custom pypi server in different environments. If there's no blocking for downloading ansible from official pypi server, and there's no need to add this argument.
 
 ### Set variables in config
 * Copy `<service>/<service>-vars/<service>-dev.yml` to `<service>/<service>-vars/<service>-<env>.yml`, `<env>` might be the env name where you deploy service
@@ -125,6 +126,10 @@ Check if `broker_url` in `airflow/airflow-vars/airflow-<env>.yml` is set to corr
 
 ### Airflow
 [airflow deployment docs](docs/airflow-deployment.md)
+
+Before running below command, make sure that
+1. Backend database (postgresql) is running.
+2. There's `ansible` installed (global or within virtualenv)
 ```
 ./deploy.sh -s airflow -e <env> [--keep-db] [--keep-venv] [--install-from-source]
 ```

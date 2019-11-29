@@ -7,11 +7,11 @@ export APP_HOME="$(
 function usage() {
     echo "[Ansible]
     Usage: $(basename $0) -e (dev|ut|uat|[prod]) [OPTIONS]
-     e.g. $(basename $0) -e ut -p 2
+     e.g. $(basename $0) -e ut -p 2.7
     COMMANDS:
         -h|--help                             Show this message
         -p|--python                           Python version (Default:2) e.g. --python 2.7
-        -e|--env                              Environment
+        -e|--env                              [Opt] Environment
         -f|--force                            Force Redeployment (delete old virtualenv)
     "
 }
@@ -53,12 +53,12 @@ while true; do
     esac
 done
 
-# check exists for ENV variable and config
-if [[ -z ${ENV} ]]; then
-    echo "$(basename $0): missing ENV : ${ENV}"
-    usage
-    exit 1
-fi
+# # check exists for ENV variable and config
+# if [[ -z ${ENV} ]]; then
+#     echo "$(basename $0): missing ENV : ${ENV}"
+#     usage
+#     exit 1
+# fi
 
 if [[ -z ${PYTHON_VERSION} ]]; then
     echo "using default python: 2.7"
