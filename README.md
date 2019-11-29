@@ -77,18 +77,19 @@ echo 'export PATH="/usr/local/opt/gnu-tar/libexec/gnubin:$PATH"' >> ~/.bash_prof
 ### Postgresql
 > skip to [Set Database - postgresql](#set-database---postgresql) and [Set Varieble - Postgresql](#set-varieble---postgresql) if postgresql is already installed
 #### Opt1: Install from source code
+> build `postgresql` from source if you don't have root privilege.
+
+Before deployment, download source code from [postgresql](https://www.postgresql.org/ftp/source/). The location of downloaded file is described in [service structure](#service-structure).
 ```
 ./deploy.sh -s postgresql -e <env>
 ```
-Download source code from [postgresql](https://www.postgresql.org/ftp/source/). The location of file is described in service structure below.
-> build `postgresql` from source if you don't have root privilege.
 
-> <span style="color:red">postgresql server is started after deployment.</span>
-* start postgresql server manually
+> <span style="color:red">postgresql is automatically started after running `./deploy.sh ...`, also commands in [Set Database - postgresql](#set-database---postgresql) are executed</span>
+* start postgresql manually
 ```
 ./bin/pg_ctl -D ./data/ -l logfile start
 ```
-* stop postgresql server manually
+* stop postgresql manually
 ```
 ./bin/pg_ctl -D ./data/ stop
 ```
@@ -108,11 +109,12 @@ Check if `backend_db` in `airflow/airflow-vars/airflow-<env>.yml` is set to corr
 
 ### redis
 > skip to [Set varieble - redis](#set-varieble---redis) if redis is already installed.
+
+Before deployment, download file from [redis](https://redis.io/download). The location of downloaded file is described in [service structure](#service-structure).
 ```
 ./deploy.sh -s redis -e <env>
 ```
-Download from [redis](https://redis.io/download). The location of file is described in service structure below.
-> <span style="color:red">redis server is started in the last step of deployment.</span>
+> <span style="color:red">redis server is automatically started in the last step of deployment.</span>
 * start redis server manually
 ```
 src/redis-server > ../redis.log 2>&1 &
